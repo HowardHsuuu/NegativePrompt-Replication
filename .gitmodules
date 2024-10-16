@@ -1,0 +1,3 @@
+[submodule "NegativePrompt"]
+	path = NegativePrompt
+	url = https://github.com/wangxu0820/NegativePrompt.git
