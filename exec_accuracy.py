@@ -35,37 +35,13 @@ def subsample_data(data, subsample_size):
 
 
 def exec_accuracy_evaluator(prompts, eval_template, eval_data, llm_model, pnum, task, num_samples, few_shot, demos_template, few_shot_data, num_demos):
-    queries = []
-    answers = []
-    my_inputs = []
-    for prompt in prompts:
-        subsampled_data = subsample_data(
-            eval_data, num_samples)
-        inputs, outputs = subsampled_data
-        for d in zip(inputs, outputs):
-            input_, output_ = d
-            demo_data = subsample_data(
-                few_shot_data, num_demos)
-            query = get_query(prompt, eval_template, input_, few_shot, demos_template, demo_data)
-            # query = get_query(
-            #     prompt, eval_template, input_)
-            queries.append(query)
-            answers.append(output_)
-            my_inputs.append(input_)
 
-    # get response from LLM
-    model_outputs = get_response_from_llm(
-        llm_model=llm_model, queries=queries, task=task, few_shot=few_shot)
-    # model_outputs = []
-    # all_outputs = []
-    # with open(f"gpt4_output.json","r") as f:
-    #     q_dict = json.load(f)
-    #     all_outputs = q_dict['times_2'][task]
-    #     model_outputs = all_outputs[pnum * 100: (pnum+1) * 100]
-
+    queries, answers = eval_data[0], eval_data[1]
+    model_outputs = get_response_from_llm(llm_id=llm_model, instruction=prompts[0], queries=queries)
+    
     metric = utility.TASK_TO_METRIC.get(task, utility.default_metric)
 
-    print(f'Using metric "{metric}" for task "{task}"...')
+    # print(f'Using metric "{metric}"')
 
     if metric == 'es':
         score_fn = utility.get_multi_answer_exact_set
@@ -75,11 +51,10 @@ def exec_accuracy_evaluator(prompts, eval_template, eval_data, llm_model, pnum, 
         score_fn = utility.get_multi_answer_f1
     elif metric == 'contains':
         score_fn = utility.get_multi_answer_contains
-
     # postprocess the responses
     if task == 'cause_and_effect':
         new_ans_ = []
-        for my_input, ans_ in zip(my_inputs, answers):
+        for my_input, ans_ in zip(queries, answers):
             sentences = my_input.split('.')
             for i in range(len(sentences)):
                 if ans_[0].lower() in sentences[i].lower() + '.':
@@ -89,7 +64,7 @@ def exec_accuracy_evaluator(prompts, eval_template, eval_data, llm_model, pnum, 
         answers = new_ans_
     elif task == 'larger_animal':
         new_ans_ = []
-        for my_input, ans_ in zip(my_inputs, answers):
+        for my_input, ans_ in zip(queries, answers):
             animals = my_input.split(',')
             for i in range(len(animals)):
                 if ans_[0].lower() in animals[i].lower():
@@ -99,7 +74,7 @@ def exec_accuracy_evaluator(prompts, eval_template, eval_data, llm_model, pnum, 
         answers = new_ans_
 
     # postprocess the responses for different tasks
-    for my_input, prediction, ans_ in zip(my_inputs, model_outputs, answers):
+    for my_input, prediction, ans_ in zip(queries, model_outputs, answers):
         for a in ans_:
             if task == 'cause_and_effect':
                 ans_parts = a.split(':')
@@ -290,9 +265,6 @@ def exec_accuracy_evaluator(prompts, eval_template, eval_data, llm_model, pnum, 
                     prediction = a
                     break
 
-        print('Model Input: ', my_input, ' Model Output: ',
-              prediction, ' Ans: ', ans_)
-
     scores = []
     for prediction, ans_ in zip(model_outputs, answers):
         score = score_fn(prediction, ans_, task, llm_model.lower())
@@ -300,10 +272,8 @@ def exec_accuracy_evaluator(prompts, eval_template, eval_data, llm_model, pnum, 
 
     # Reshape the scores so that it is num_prompts x num_samples
     scores = np.array(scores).reshape(len(prompts), num_samples)
-
     res = ExecAccuracyEvaluationResult(prompts, scores)
     return res
-
 
 def postprocess_prediction_4sentiment(prediction):
     if prediction == 'neg':

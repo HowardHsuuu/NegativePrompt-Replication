@@ -35,7 +35,10 @@ def get_em_score(prediction, ground_truth):
     prediction_normalized = normalize_prediction(prediction, lowercase=True)
     ground_truth_normalized = normalize_prediction(
         ground_truth, lowercase=True)
-    # print('P: ', prediction_normalized)
+    
+    # if prediction_normalized != ground_truth_normalized:
+    #     print(f"Prediction is different from ground truth\n{prediction_normalized}\tvs\t{ground_truth_normalized}")
+    #     print("-"*30)
     return prediction_normalized == ground_truth_normalized
 
 
@@ -120,7 +123,7 @@ def get_em_score_starts_with(prediction, ground_truth):
     if a_set == preds_set:
         return 1
 
-    print('Wrong: ', 'gt:', ground_truth, ' predict: ', prediction)
+    # print('Wrong: ', 'gt:', ground_truth, ' predict: ', prediction)
     return 0
 
 
@@ -168,7 +171,7 @@ def get_em_score_taxonomy_animal(prediction, ground_truth):
 
     if a_set == preds_set:
         return 1
-    print('Wrong! ', ground_truth, prediction)
+    # print('Wrong! ', ground_truth, prediction)
     
     return 0
 
@@ -282,7 +285,7 @@ def get_exact_set_score(prediction, ground_truth):
         if int(set(prediction_normalized) == set(ground_truth_normalized)) == 1:
             return 1
         else:
-            print('Wrong: ', 'gt:', ground_truth, ' predict: ', prediction)
+            # print('Wrong: ', 'gt:', ground_truth, ' predict: ', prediction)
             return 0
         # return int(set(prediction_normalized) == set(ground_truth_normalized))
 
@@ -345,7 +348,7 @@ def get_multi_answer_em(prediction, answers, task, model):
             else:
                 if get_em_score(prediction, answer) == 1:
                     return 1
-            print('Wrong: ', answer, prediction)
+            # ('Wrong: ', answer, prediction)
         else:
             if get_em_score(prediction, answer) == 1:
                 return 1
@@ -387,3 +390,25 @@ def get_multi_answer_contains(prediction, answers, task, model):
         if get_contains_score(prediction, answer) == 1:
             return 1
     return 0
+
+
+def progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=50, fill='█', print_end="\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        print_end   - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=print_end)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
