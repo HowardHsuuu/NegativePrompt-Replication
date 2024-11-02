@@ -19,7 +19,7 @@ def combine_csv_files(folder_path, output_filename):
     combined_df.to_csv(output_filename, index=False)
 
 if __name__ == "__main__":
-    folder_path = "/Users/jacopominniti/Desktop"  # Change this to your folder path
-    output_filename = "istruction_induction_no_shots.csv"  # Change this to your desired output filename
+    folder_path = "/Users/howardhsu/Desktop/2024Fall_HW/mslab/NegativePrompt-Replication"  # Change this to your folder path
+    output_filename = "mistral_istruction_induction_no_shots.csv"  # Change this to your desired output filename
     combine_csv_files(folder_path, output_filename)
 

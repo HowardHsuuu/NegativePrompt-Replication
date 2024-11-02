@@ -12,7 +12,7 @@ import torch
 load_dotenv()
 
 llm_openai = ['gpt-3.5-turbo', 'gpt-4', 'vicuna']
-llm_hf = ['llama2', 't5', 'phi-3.5-mini', 'qwen2.5']
+llm_hf = ['llama2', 't5', 'phi-3.5-mini', 'qwen2.5', 'mistral']
 
 MODEL_MAPPING = {
     'phi-3.5-mini': 'microsoft/Phi-3.5-mini-instruct',
@@ -22,7 +22,8 @@ MODEL_MAPPING = {
     'qwen2.5': 'Qwen/Qwen2.5-0.5B-Instruct',
     'gpt-3.5': 'gpt-3.5-turbo',
     'gpt-4o': 'gpt-4o',
-    'vicuna': 'vicuna-13b-v1.1'  # Assuming this is the correct model name for Vicuna
+    'vicuna': 'vicuna-13b-v1.1',  # Assuming this is the correct model name for Vicuna
+    'mistral': 'mistralai/Mistral-7B-Instruct-v0.2'
 }
 
 def get_response_from_llm(llm_id: str, instruction: str, queries: list[str], api_num=4, local=True):
@@ -75,18 +76,33 @@ def get_local_hf_response(llm_id: str, instruction: str, queries: list[str]):
     device = model.device
 
     for i, query in enumerate(queries):
-        messages = [
-            {"role": "system", "content": instruction},
-            {"role": "user", "content": query}
-        ]
-
-        text = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
+        if llm_id == 'mistral':
+            messages = [
+                {"role": "system", "content": instruction},
+                {"role": "user", "content": query}
+            ]
+            # Mistral's specific chat template
+            text = f"<s>[INST] {instruction}\n\n{query} [/INST]"
+        else:
+            messages = [
+                {"role": "system", "content": instruction},
+                {"role": "user", "content": query}
+            ]
+            text = tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True
+            )
         model_inputs = tokenizer([text], return_tensors="pt").to(device)
-        generated_ids = model.generate(**model_inputs, max_new_tokens=200)
+        # generated_ids = model.generate(**model_inputs, max_new_tokens=200)
+        generated_ids = model.generate(
+            **model_inputs,
+            max_new_tokens=200,
+            temperature=0.7,
+            top_p=0.95,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+        )
 
         # Process the output by skipping the input tokens and special tokens
         generated_ids = [
